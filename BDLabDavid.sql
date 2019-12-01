@@ -58,6 +58,7 @@ END questao1;
 
 
 ---------------------------- QUESTÃO 2 ----------------------------
+-- Modificações na Tabela
 ALTER TABLE Pedido 
 ADD (
     qtdComprados INTEGER,
@@ -66,19 +67,44 @@ ADD (
     valorTotalPedido DECIMAL
 );
 
+-- Programa PL/SQL
 DECLARE
-qtdComprados INTEGER;
+vCodigoPedido Pedido.Codigo%TYPE;
+vQtdComprados INTEGER;
+vQtdCompradosDif INTEGER;
 vValorTotalProdutos DECIMAL;
 vValorTotalFrete DECIMAL;
 vValorTotalPedido DECIMAL;
 vTaxaBase Transportadora.TaxaBase%TYPE;
 vTaxaEnvio Transportadora.TaxaEnvio%TYPE;
+vImposto Pedido.Imposto%TYPE;
 
-CURSOR cursorQ2 IS SELECT p.codigo, dp.codigoproduto, dp.quantidade
-FROM cliente c, pedido p, detalhespedido dp
-WHERE p.codigocliente = c.codigo and dp.codigopedido = p.codigo;
+-- Cursor
+CURSOR cursorQ2 IS SELECT p.codigo, sum(dp.quantidade) as qtdTotal, sum(dp.quantidade*dp.precounitario) as precoTotal_Produtos, t.taxabase, t.taxaenvio, p.imposto, count(dp.codigoproduto) as qtdProdutoDif
+FROM pedido p, transportadora t, detalhespedido dp
+WHERE p.codigotransportadora = t.codigo and p.codigo = dp.codigopedido
+GROUP BY p.codigo, t.taxabase, t.taxaenvio, p.imposto
+ORDER BY p.codigo;
 
 BEGIN
+
+OPEN cursorQ2;
+LOOP
+FETCH cursorQ2 INTO vCodigoPedido, vQtdComprados, vValorTotalProdutos, vTaxaBase, vTaxaEnvio, vImposto, vQtdCompradosDif;
+EXIT WHEN cursorQ2%NOTFOUND;
+
+vValorTotalFrete := vTaxaBase + (vQtdComprados*vTaxaEnvio);
+vValorTotalPedido := vValorTotalProdutos + vValorTotalFrete + vImposto;
+
+UPDATE Pedido SET 
+    qtdComprados = vQtdComprados,
+    valorTotalProdutos = vValorTotalProdutos, 
+    valorTotalFrete = vValorTotalFrete,
+    valorTotalPedido = vValorTotalPedido
+WHERE Pedido.codigo = vCodigoPedido;
+
+END LOOP;
+
 CLOSE cursorQ2;
 END;
 -------------------------------------------------------------------
