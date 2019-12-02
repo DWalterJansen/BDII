@@ -1,5 +1,5 @@
 ---------------------------- QUESTÃO 1 ----------------------------
-create or replace procedure questao1 ( pCodigoCliente in Cliente.codigo%TYPE) is
+CREATE OR REPLACE PROCEDURE questao1 ( pCodigoCliente in Cliente.codigo%TYPE) IS
 
 -- Variaveis consulta parte 1
 vTratamentoCliente Cliente.tratamento%TYPE;
@@ -16,6 +16,7 @@ vPedidosValor DetalhesPedido.PrecoUnitario%Type;
 
 -- Variaveis exception
 vCodigoEx EXCEPTION;
+vCheck NUMBER := 0;
 
 -- Consulta parte 2
 CURSOR cursorQ1 IS SELECT p.Codigo, p.dtPedido, p.dtEnvio, p.dtRecebimento,
@@ -30,9 +31,12 @@ WHERE p.codigocliente = c.codigo and e.id = p.enderecoentrega and p.codigotransp
 ORDER BY p.dtPedido;
 
 BEGIN
-
-IF (pCodigoCliente is NULL) THEN
-RAISE vCodigoEx;
+select count(*) into vCheck 
+    from Cliente c
+    where c.codigo = pCodigoCliente;
+    
+IF (vCheck = 0) THEN
+    RAISE vCodigoEx;
 END IF;
 
 -- Consulta parte 1
@@ -49,14 +53,14 @@ FETCH cursorQ1 INTO vPedidoCodigo, vPedidoDtPedido, vPedidoDtEnvio, vPedidoDtRec
 EXIT WHEN cursorQ1%NOTFOUND;
 dbms_output.put_line(vPedidoCodigo || ', ' || vPedidoDtPedido || ', ' || vPedidoDtEnvio || ', ' || vPedidoDtReceb || ', ' || vPedidoEnderecoComp || ', ' || vTransportadoraNome || ', ' || vPedidosValor);
 END LOOP;
+CLOSE cursorQ1;
 
 EXCEPTION
-WHEN vCodigoEx THEN dbms_output.put_line('Forneceça o código do Cliente');
+WHEN vCodigoEx THEN dbms_output.put_line('Forneceça um código válido  para Cliente');
 
-CLOSE cursorQ1;
 END questao1;
 
-
+-------------------------------------------------------------------
 ---------------------------- QUESTÃO 2 ----------------------------
 -- Modificações na Tabela
 ALTER TABLE Pedido 
@@ -68,7 +72,7 @@ ADD (
 );
 
 -- Programa PL/SQL
-DECLARE
+CREATE OR REPLACE PROCEDURE questao2 IS
 vCodigoPedido Pedido.Codigo%TYPE;
 vQtdComprados INTEGER;
 vQtdCompradosDif INTEGER;
@@ -106,5 +110,47 @@ WHERE Pedido.codigo = vCodigoPedido;
 END LOOP;
 
 CLOSE cursorQ2;
-END;
+END questao2;
+
 -------------------------------------------------------------------
+---------------------------- QUESTÃO 3 ----------------------------
+CREATE OR REPLACE FUNCTION questao3(pMes DATE, pAno DATE) RETURN VARCHAR IS
+vNomeCompleto VARCHAR(256);
+vValor DECIMAL;
+
+BEGIN
+
+SELECT c.primeironome || ' ' || nvl(c.nomedomeio,' ') || ' ' || c.sobrenome, p.valorTotalPedido INTO vNomeCompleto, vValor
+FROM Cliente c, Pedido p
+WHERE c.codigo = p.codigocliente and EXTRACT(MONTH FROM p.dtPedido) = pMes and EXTRACT(YEAR FROM p.dtPedido) = pAno
+    and ROWNUM = 1
+ORDER BY p.valorTotalPedido;
+
+RETURN vNomeCompleto;
+END questao3;
+-------------------------------------------------------------------
+
+---------------------------- QUESTÃO 4 ----------------------------
+CREATE OR REPLACE PROCEDURE questao4 (pCodigoTransp Transportador.Codigo%TYPE) IS
+
+vAno DATE;
+vFaturamentoAnual DECIMAL;
+
+CURSOR cursorQ4 IS SELECT EXTRACT(YEAR FROM p.dtPedido) as ano, sum(valorTotalFrete)
+FROM Pedido p, Transportadora t
+WHERE p.codigotransportadora = t.codigo and t.codigo = pCodigoTransp
+GROUP BY EXTRACT(YEAR FROM p.dtPedido)
+ORDER BY EXTRACT(YEAR FROM p.dtPedido);
+
+BEGIN
+OPEN cursorQ4;
+LOOP
+FETCH cursorQ4 INTO vAno, vFaturamentoAnual;
+EXIT WHEN cursorQ4%NOTFOUND;
+dbms_output.put_line('Faturamento por Ano: ' || vAno || ', ' || vFaturamentoAnual);
+END LOOP;
+
+CLOSE cursorQ4;
+END questao4;
+-------------------------------------------------------------------
+
