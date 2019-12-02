@@ -72,32 +72,38 @@ ADD (
 );
 
 -- Programa PL/SQL
-CREATE OR REPLACE PROCEDURE questao2 IS
+-- Descomente apenas para teste CREATE OR REPLACE PROCEDURE questao2 IS
+DECLARE
 vCodigoPedido Pedido.Codigo%TYPE;
 vQtdComprados INTEGER;
-vQtdCompradosDif INTEGER;
 vValorTotalProdutos DECIMAL;
 vValorTotalFrete DECIMAL;
 vValorTotalPedido DECIMAL;
 vTaxaBase Transportadora.TaxaBase%TYPE;
-vTaxaEnvio Transportadora.TaxaEnvio%TYPE;
+vTaxaAdicionalEnvio Transportadora.TaxaEnvio%TYPE;
 vImposto Pedido.Imposto%TYPE;
 
 -- Cursor
-CURSOR cursorQ2 IS SELECT p.codigo, sum(dp.quantidade) as qtdTotal, sum(dp.quantidade*dp.precounitario) as precoTotal_Produtos, t.taxabase, t.taxaenvio, p.imposto, count(dp.codigoproduto) as qtdProdutoDif
-FROM pedido p, transportadora t, detalhespedido dp
-WHERE p.codigotransportadora = t.codigo and p.codigo = dp.codigopedido
-GROUP BY p.codigo, t.taxabase, t.taxaenvio, p.imposto
+CURSOR cursorQ2 IS SELECT p.codigo, sum(dp.quantidade) as qtdTotal, sum(dp.quantidade*dp.precounitario) as precoTotal_Produtos, r.adicionalTxEnvio, t.taxabase, p.imposto
+FROM pedido p, transportadora t, detalhespedido dp, (
+    select p.codigo as codigo, sum(dp.precounitario*t.taxaenvio) as adicionalTxEnvio
+    from transportadora t, pedido p, detalhespedido dp
+    where t.codigo = p.codigotransportadora and p.codigo = dp.codigopedido
+    group by p.codigo
+    order by p.codigo
+) r
+WHERE p.codigotransportadora = t.codigo and p.codigo = dp.codigopedido and r.codigo = p.codigo
+GROUP BY p.codigo, t.taxabase, p.imposto, r.adicionalTxEnvio
 ORDER BY p.codigo;
 
 BEGIN
 
 OPEN cursorQ2;
 LOOP
-FETCH cursorQ2 INTO vCodigoPedido, vQtdComprados, vValorTotalProdutos, vTaxaBase, vTaxaEnvio, vImposto, vQtdCompradosDif;
+FETCH cursorQ2 INTO vCodigoPedido, vQtdComprados, vValorTotalProdutos, vTaxaAdicionalEnvio, vTaxaBase, vImposto;
 EXIT WHEN cursorQ2%NOTFOUND;
 
-vValorTotalFrete := vTaxaBase + (vQtdComprados*vTaxaEnvio);
+vValorTotalFrete := vTaxaBase + vTaxaAdicionalEnvio;
 vValorTotalPedido := vValorTotalProdutos + vValorTotalFrete + vImposto;
 
 UPDATE Pedido SET 
@@ -138,9 +144,9 @@ CREATE OR REPLACE PROCEDURE questao4 (pCodigoTransp Transportador.Codigo%TYPE) I
 vAno DATE;
 vFaturamentoAnual DECIMAL;
 
-CURSOR cursorQ4 IS SELECT EXTRACT(YEAR FROM p.dtPedido) as ano, sum(valorTotalFrete)
+CURSOR cursorQ4 IS SELECT EXTRACT(YEAR FROM p.dtPedido) as ano, sum(p.valorTotalFrete)
 FROM Pedido p, Transportadora t
-WHERE p.codigotransportadora = t.codigo and t.codigo = pCodigoTransp
+WHERE p.codigotransportadora = t.codigo and t.codigo = pCodigoTransp and p.dtrecimento is not null
 GROUP BY EXTRACT(YEAR FROM p.dtPedido)
 ORDER BY EXTRACT(YEAR FROM p.dtPedido);
 
@@ -155,4 +161,3 @@ END LOOP;
 CLOSE cursorQ4;
 END questao4;
 -------------------------------------------------------------------
-
