@@ -80,7 +80,7 @@ vValorTotalProdutos DECIMAL;
 vValorTotalFrete DECIMAL;
 vValorTotalPedido DECIMAL;
 vTaxaBase Transportadora.TaxaBase%TYPE;
-vTaxaAdicionalEnvio Transportadora.TaxaEnvio%TYPE;
+vTaxaAdicionalEnvio DECIMAL;
 vImposto Pedido.Imposto%TYPE;
 
 -- Cursor
@@ -116,7 +116,7 @@ WHERE Pedido.codigo = vCodigoPedido;
 END LOOP;
 
 CLOSE cursorQ2;
-END questao2;
+END;
 
 -------------------------------------------------------------------
 ---------------------------- QUESTÃO 3 ----------------------------
