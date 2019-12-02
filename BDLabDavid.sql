@@ -117,14 +117,16 @@ END questao2;
 CREATE OR REPLACE FUNCTION questao3(pMes DATE, pAno DATE) RETURN VARCHAR IS
 vNomeCompleto VARCHAR(256);
 vValor DECIMAL;
+vCodigoCliente Cliente.Codigo%TYPE;
 
 BEGIN
 
-SELECT c.primeironome || ' ' || nvl(c.nomedomeio,' ') || ' ' || c.sobrenome, p.valorTotalPedido INTO vNomeCompleto, vValor
+SELECT c.codigo, c.primeironome || ' ' || nvl(c.nomedomeio,' ') || ' ' || c.sobrenome, sum(p.valorTotalPedido) INTO vCodigoCliente, vNomeCompleto, vValor
 FROM Cliente c, Pedido p
 WHERE c.codigo = p.codigocliente and EXTRACT(MONTH FROM p.dtPedido) = pMes and EXTRACT(YEAR FROM p.dtPedido) = pAno
     and ROWNUM = 1
-ORDER BY p.valorTotalPedido;
+GROUP BY c.codigo, c.primeironome || ' ' || nvl(c.nomedomeio,' ') || ' ' || c.sobrenome
+ORDER BY sum(p.valorTotalPedido);
 
 RETURN vNomeCompleto;
 END questao3;
