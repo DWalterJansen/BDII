@@ -120,7 +120,7 @@ END;
 
 -------------------------------------------------------------------
 ---------------------------- QUESTÃO 3 ----------------------------
-CREATE OR REPLACE FUNCTION questao3(pMes DATE, pAno DATE) RETURN VARCHAR IS
+CREATE OR REPLACE FUNCTION questao3(pMes NUMBER, pAno NUMBER) RETURN VARCHAR IS
 vNomeCompleto VARCHAR(256);
 vValor DECIMAL;
 vCodigoCliente Cliente.Codigo%TYPE;
@@ -161,3 +161,7 @@ END LOOP;
 CLOSE cursorQ4;
 END questao4;
 -------------------------------------------------------------------
+
+
+SET SERVEROUTPUT ON;
+Select questao3(08, 2005) FROM DUAl;
