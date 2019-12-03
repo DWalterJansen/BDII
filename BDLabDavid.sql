@@ -139,14 +139,14 @@ END questao3;
 -------------------------------------------------------------------
 
 ---------------------------- QUESTÃO 4 ----------------------------
-CREATE OR REPLACE PROCEDURE questao4 (pCodigoTransp Transportador.Codigo%TYPE) IS
+CREATE OR REPLACE PROCEDURE questao4 (pCodigoTransp Transportadora.Codigo%TYPE) IS
 
-vAno DATE;
+vAno NUMBER;
 vFaturamentoAnual DECIMAL;
 
 CURSOR cursorQ4 IS SELECT EXTRACT(YEAR FROM p.dtPedido) as ano, sum(p.valorTotalFrete)
 FROM Pedido p, Transportadora t
-WHERE p.codigotransportadora = t.codigo and t.codigo = pCodigoTransp and p.dtrecimento is not null
+WHERE p.codigotransportadora = t.codigo and t.codigo = pCodigoTransp and p.dtrecebimento is not null
 GROUP BY EXTRACT(YEAR FROM p.dtPedido)
 ORDER BY EXTRACT(YEAR FROM p.dtPedido);
 
@@ -155,13 +155,19 @@ OPEN cursorQ4;
 LOOP
 FETCH cursorQ4 INTO vAno, vFaturamentoAnual;
 EXIT WHEN cursorQ4%NOTFOUND;
-dbms_output.put_line('Faturamento por Ano: ' || vAno || ', ' || vFaturamentoAnual);
+dbms_output.put_line('Faturamento por Ano: ' || vAno || ', $$' || vFaturamentoAnual);
 END LOOP;
 
 CLOSE cursorQ4;
 END questao4;
 -------------------------------------------------------------------
 
-
+-- Teste da 3
 SET SERVEROUTPUT ON;
 Select questao3(08, 2005) FROM DUAl;
+
+-- Teste da 4
+SET SERVEROUTPUT ON;
+BEGIN
+    questao4(1);
+END;
